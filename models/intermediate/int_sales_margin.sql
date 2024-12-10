@@ -1,15 +1,21 @@
-With clean_gz_product as (SELECT * from {{ ref("stg_raw__product") }})
+{{ config(materialized = 'table') }}
 
-#select clean_gz_product.purchase_price, clean_gz_sales.quantity
-select 
+WITH clean_gz_product AS (SELECT * from {{ ref("stg_raw__product") }}),
+clean_gz_sales AS (SELECT * FROM {{ ref("stg_raw__sales") }})
+
+SELECT 
 clean_gz_sales.orders_id,
 clean_gz_sales.date_date,
-clean_gz_sales.revenue,
-clean_gz_sales.quantity,
-(CAST(clean_gz_product.purchase_price AS FLOAT64)) * clean_gz_sales.quantity as purchase_cost,
-round(clean_gz_sales.revenue - (CAST(clean_gz_product.purchase_price AS FLOAT64)) * clean_gz_sales.quantity, 2) as margin
+ROUND(SUM(clean_gz_sales.revenue), 2) AS revenue,
+SUM(clean_gz_sales.quantity) AS quantity,
+ROUND(SUM(ROUND(clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2) AS purchase_cost,
+ROUND(SUM(ROUND(clean_gz_sales.revenue - clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2) AS margin,
 
-FROM {{ ref("stg_raw__sales") }} as clean_gz_sales
+FROM clean_gz_sales
 
 JOIN clean_gz_product 
-on clean_gz_product.products_id = clean_gz_sales.products_id
+ON clean_gz_product.products_id = clean_gz_sales.products_id
+
+GROUP BY 
+clean_gz_sales.orders_id, 
+clean_gz_sales.date_date
