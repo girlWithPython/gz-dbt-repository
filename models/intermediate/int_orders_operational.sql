@@ -1,7 +1,7 @@
 {{ config(materialized = 'table') }}
 
 WITH clean_gz_ship as (SELECT * FROM {{ ref("stg_raw__ship") }}),
-gz_margin as (SELECT * FROM {{ ref("int_sales_margin") }})
+gz_margin as (SELECT * FROM {{ ref("int_orders_margin") }})
 
 SELECT 
 gz_margin.orders_id,
