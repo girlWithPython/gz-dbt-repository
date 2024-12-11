@@ -1,4 +1,4 @@
-{{ config(materialized = 'table') }}
+--{{ config(materialized = 'table') }}
 
 WITH clean_gz_product AS (SELECT * from {{ ref("stg_raw__product") }}),
 clean_gz_sales AS (SELECT * FROM {{ ref("stg_raw__sales") }})

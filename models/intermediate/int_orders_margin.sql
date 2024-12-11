@@ -1,4 +1,4 @@
-{{ config(materialized = 'table') }}
+--{{ config(materialized = 'table') }}
 
 WITH sales_margin AS (SELECT * from {{ ref("int_sales_margin") }})
 
