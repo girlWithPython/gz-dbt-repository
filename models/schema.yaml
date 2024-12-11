@@ -61,6 +61,78 @@ sources:
              description: amount of logcost, paid by the company
            - name: ship_cost
              description: amount of ship_cost, paid by the company
+       - name: adwords
+         identifier: raw_gz_adwords
+         description: ad campaigns of Greenweez / adwords
+         columns:
+           - name: date_date
+             description: date of a compain
+           - name: paid_source
+             description: paid_source / adwords
+           - name: campaign_key
+             description: campaign key 
+           - name: camPGN_name
+             description: campaign name   
+           - name: ads_cost
+             description: ads costs
+           - name: impression
+             description: number of impressions
+           - name: click
+             description: number of clicks
+       - name: bing
+         identifier: raw_gz_bing
+         description: ad campaigns of Greenweez / bing
+         columns:
+           - name: date_date
+             description: date of a compain
+           - name: paid_source
+             description: paid_source / bing
+           - name: campaign_key
+             description: campaign key 
+           - name: camPGN_name
+             description: campaign name   
+           - name: ads_cost
+             description: ads costs
+           - name: impression
+             description: number of impressions
+           - name: click
+             description: number of clicks
+       - name: criteo
+         identifier: raw_gz_criteo
+         description: ad campaigns of Greenweez / criteo
+         columns:
+           - name: date_date
+             description: date of a compain
+           - name: paid_source
+             description: paid_source / criteo
+           - name: campaign_key
+             description: campaign key 
+           - name: camPGN_name
+             description: campaign name   
+           - name: ads_cost
+             description: ads costs
+           - name: impression
+             description: number of impressions
+           - name: click
+             description: number of clicks
+       - name: facebook
+         identifier: raw_gz_facebook
+         description: ad campaigns of Greenweez / facebook
+         columns:
+           - name: date_date
+             description: date of a compain
+           - name: paid_source
+             description: paid_source / facebook
+           - name: campaign_key
+             description: campaign key 
+           - name: camPGN_name
+             description: campaign name   
+           - name: ads_cost
+             description: ads costs
+           - name: impression
+             description: number of impressions
+           - name: click
+             description: number of clicks
 
 models:
    - name: int_sales_margin
@@ -158,6 +230,62 @@ models:
          tests:
            - not_null
 
+   - name: int_campaigns
+     description: ad campaigns of Greenweez 
+     columns: 
+        - name: date_date
+          description: date of a compain
+          tests:
+           - not_null
+        - name: paid_source
+          description: paid_source 
+          tests:
+           - not_null
+        - name: campaign_key
+          description: campaign key 
+        - name: campaign_name
+          description: campaign name  
+          tests:
+           - not_null 
+        - name: ads_cost
+          description: ads costs
+          tests:
+           - not_null
+        - name: impression
+          description: number of impressions
+          tests:
+           - not_null
+        - name: click
+          description: number of clicks
+          tests:
+           - not_null
+     tests:         
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - date_date
+            - campaign_key
+
+   - name: int_campaigns_day
+     description: ad campaigns of Greenweez per day
+     columns: 
+        - name: date_date
+          description: date of a compains
+          tests:
+            - unique
+            - not_null
+        - name: ads_cost
+          description: ads costs per day
+          tests:
+           - not_null
+        - name: ads_impression
+          description: number of impressions per day
+          tests:
+           - not_null
+        - name: ads_clicks
+          description: number of clicks per day
+          tests:
+           - not_null
+
    - name: finance_days
      description: to calculate data for finance team at a daily granularity, added number of transactions and average_basket columns
      columns:    
@@ -190,3 +318,5 @@ models:
          description: total number of sold products per day
          tests:
            - not_null
+
+    

@@ -41,7 +41,8 @@ models:
     staging:
       +materialized: view
     intermediate:
-      +materialized: ethemeral
+      +materialized: view
+      # +materialized: ethemeral
     mart:
       +materialized: table
       finance:
