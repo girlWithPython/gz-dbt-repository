@@ -1,23 +1,18 @@
---{{ config(materialized = 'table') }}
+WITH 
 
-WITH clean_gz_product AS (SELECT * from {{ ref("stg_raw__product") }}),
-clean_gz_sales AS (SELECT * FROM {{ ref("stg_raw__sales") }})
+purchase_cost_added as(
+    SELECT 
+    sales.*
+    , ROUND((product.purchase_price * quantity), 2) as purchase_cost
+    FROM {{ ref("stg_raw__sales") }} as sales
+    LEFT JOIN
+    {{ ref("stg_raw__product") }} as product
+    USING
+        (products_id)
+)
 
 SELECT 
-clean_gz_sales.products_id,
-clean_gz_sales.orders_id,
-clean_gz_sales.date_date,
-ROUND(SUM(clean_gz_sales.revenue), 2) AS revenue,
-SUM(clean_gz_sales.quantity) AS quantity,
-ROUND(SUM(ROUND(clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2) AS purchase_cost,
-ROUND(SUM(ROUND(clean_gz_sales.revenue - clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2) AS margin,
-
-FROM clean_gz_sales
-
-JOIN clean_gz_product 
-ON clean_gz_product.products_id = clean_gz_sales.products_id
-
-GROUP BY 
-clean_gz_sales.products_id,
-clean_gz_sales.orders_id, 
-clean_gz_sales.date_date
+    *
+    , ROUND((revenue - purchase_cost), 2) AS margin
+    , {{ margin_percent('revenue', 'purchase_cost') }} AS margin_percent
+FROM purchase_cost_added
