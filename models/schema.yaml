@@ -1,0 +1,192 @@
+version: 3
+
+sources:
+   - name: raw
+     schema: gz_raw_data # schema == dataset   
+     
+     tables:
+       - name: product
+         identifier: raw_gz_product
+         description: products of Greenweez / we have purchase_price per each product_id
+         columns:
+           - name: products_id
+             description: date of purchase
+             tests:
+              - not_null
+              - unique                            
+           - name: purchse_price
+             description: price of product
+       - name: sales
+         identifier: raw_gz_sales
+         description: sales of Greenweez / we have on row per product_id found in each orders_id
+         
+         # Freshness testing
+         freshness:
+           warn_after: {count: 1, period: minute}
+           error_after: {count: 2400, period: day}
+         loaded_at_field: CAST(date_date AS TIMESTAMP)
+
+         tests:         
+           - dbt_utils.unique_combination_of_columns:
+              combination_of_columns:
+                - orders_id
+                - pdt_id
+         columns:
+           - name: date_date
+             description: date of purchase
+           - name: orders_id
+             description: order id
+             tests:            
+              - not_null  
+           - name: pdt_id
+             description: product id
+             tests:            
+              - not_null           
+           - name: revenue
+             description: revenue per each order id and product id combnation
+           - name: quantity
+             description: quantity of products with the same product id per one order
+       - name: ship
+         identifier: raw_gz_ship
+         description: sales of Greenweez / we have costs rows per each orders_id
+         columns:           
+           - name: orders_id
+             description: order id 
+             tests:
+              - not_null
+              - unique
+           - name: shipping_fee
+             description: amount of a shipping fee, paid by a customer
+           - name: logcost
+             description: amount of logcost, paid by the company
+           - name: ship_cost
+             description: amount of ship_cost, paid by the company
+
+models:
+   - name: int_sales_margin
+     description: to calculate the margin per product; added purchase_cost and margin columns
+     columns:
+       - name: products_id
+         description: product id
+         tests:
+           - not_null
+       - name: orders_id
+         description: order id
+         tests:
+           - not_null
+       - name: date_date
+         description: date of purchase
+         tests:
+           - not_null 
+       - name: revenue
+         description: total revenue per order
+         tests:
+           - not_null
+       - name: quantity
+         description: total quantity per order
+         tests:
+           - not_null
+       - name: purchase_cost
+         description: total purchase_cost per order - ROUND(SUM(ROUND(clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2)
+         tests:
+           - not_null
+       - name: margin
+         description: total margin per order - ROUND(SUM(ROUND(clean_gz_sales.revenue - clean_gz_product.purchase_price * clean_gz_sales.quantity, 2)), 2)
+         tests:
+           - not_null
+     tests:         
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - orders_id
+            - products_id
+
+   - name: int_orders_margin
+     description: to calculate the margin per order; added GROUP BY orders_id 
+     columns:
+       - name: orders_id
+         description: order id
+         tests:
+           - unique
+           - not_null
+       - name: date_date
+         description: day of order
+         tests:
+           - not_null 
+       - name: revenue
+         description: total revenue per order
+         tests:
+           - not_null
+       - name: quantity
+         description: total quantity per order
+         tests:
+           - not_null
+       - name: purchase_cost
+         description: total purchase_cost per order
+         tests:
+           - not_null
+       - name: margin
+         description: total margin per order
+         tests:
+           - not_null
+      
+   - name: int_orders_operational
+     description: to calculate the operational margin per order; added operational_margin column
+     columns:
+       - name: orders_id
+         description: order id
+         tests:
+           - unique
+           - not_null
+       - name: date_date
+         description: day of order
+         tests:
+           - not_null   
+       - name: revenue
+         description: total revenue per order
+         tests:
+           - not_null
+       - name: quantity
+         description: total quantity per order
+         tests:
+           - not_null       
+       - name: margin
+         description: total purchase_cost per order
+         tests:
+           - not_null
+       - name: operational_margin
+         description: total margin per order - ROUND(SUM(ROUND((gz_margin.margin + clean_gz_ship.shipping_fee - clean_gz_ship.ship_cost - clean_gz_ship.logcost), 2)), 2)
+         tests:
+           - not_null
+
+   - name: finance_days
+     description: to calculate data for finance team at a daily granularity, added number of transactions and average_basket columns
+     columns:    
+       - name: date_date
+         description: day
+         tests:
+           - unique
+           - not_null  
+       - name: nb_transactions
+         description: number of transactions per day - COUNT(orders_id)
+         tests:
+           - not_null  
+       - name: revenue
+         description: total revenue per day
+         tests:
+           - not_null
+       - name: average_basket
+         description: average basket per day - ROUND(ROUND(SUM(revenue), 2)/COUNT(orders_id), 1) 
+         tests:
+           - not_null           
+       - name: margin
+         description: total margin per day
+         tests:
+           - not_null
+       - name: operational_margin
+         description: total operational_margin per day
+         tests:
+           - not_null
+       - name: quantity
+         description: total number of sold products per day
+         tests:
+           - not_null
